@@ -8,11 +8,14 @@ function createStatsTable(vehicles) {
   }
 
   const allStatKeys = [
-    ...new Set(vehicles.flatMap((vehicle) => Object.keys(vehicle.stats ?? {}))),
+    ...new Set(
+      vehicles.flatMap((vehicle) =>
+        Object.keys(vehicle.stats ?? {})
+      )
+    ),
   ];
 
-  let activeStat = null;
-  let direction = "desc";
+  let sortCriteria = [];
   let showAllStats = false;
 
   function getLabel(statKey) {
@@ -27,26 +30,123 @@ function createStatsTable(vehicles) {
       return "asc";
     }
 
-    const better = window.TyrEnhanced.statDefinitions?.[statKey]?.better;
+    const better =
+      window.TyrEnhanced.statDefinitions?.[statKey]?.better;
 
     return better === "lower" ? "asc" : "desc";
   }
 
-  function formatValue(value) {
-    if (typeof value !== "number") {
-      return "N/A";
+  function getSortCriterion(statKey) {
+    const index = sortCriteria.findIndex(
+      (criterion) => criterion.key === statKey
+    );
+
+    if (index === -1) {
+      return null;
     }
 
-    return Number.isInteger(value)
-      ? value.toLocaleString()
-      : value.toLocaleString(undefined, {
-          maximumFractionDigits: 3,
-        });
+    return {
+      ...sortCriteria[index],
+      priority: index + 1,
+    };
+  }
+
+  function renderSortHeader(
+    statKey,
+    label,
+    numeric = false
+  ) {
+    const criterion = getSortCriterion(statKey);
+
+    const sortDirection =
+      criterion?.direction ?? "none";
+
+    const indicator = criterion
+      ? `${
+          criterion.direction === "asc" ? "▲" : "▼"
+        }${criterion.priority}`
+      : "↕";
+
+    return `
+      <th
+        class="${numeric ? "numeric " : ""}tyr-enhanced-sort"
+        data-stat="${statKey}"
+        data-sort-direction="${sortDirection}"
+      >
+        <span class="tyr-enhanced-sort-label">
+          ${label}
+        </span>
+
+        <span
+          class="tyr-enhanced-sort-indicator"
+          aria-hidden="true"
+        >
+          ${indicator}
+        </span>
+      </th>
+    `;
+  }
+
+  function compareVehicles(a, b) {
+    const classOrder = {
+      light: 0,
+      medium: 1,
+      heavy: 2,
+    };
+
+    for (const criterion of sortCriteria) {
+      const { key, direction } = criterion;
+
+      if (key === "__class__") {
+        const aValue = classOrder[a.classId] ?? 99;
+        const bValue = classOrder[b.classId] ?? 99;
+
+        if (aValue !== bValue) {
+          return direction === "asc"
+            ? aValue - bValue
+            : bValue - aValue;
+        }
+
+        continue;
+      }
+
+      const aValue =
+        window.TyrEnhanced.getStatValue(a, key);
+
+      const bValue =
+        window.TyrEnhanced.getStatValue(b, key);
+
+      // N/A values always remain at the bottom.
+      if (aValue === null && bValue === null) {
+        continue;
+      }
+
+      if (aValue === null) {
+        return 1;
+      }
+
+      if (bValue === null) {
+        return -1;
+      }
+
+      if (aValue !== bValue) {
+        return direction === "asc"
+          ? aValue - bValue
+          : bValue - aValue;
+      }
+    }
+
+    // Final tie-breaker.
+    return a.name.localeCompare(b.name);
   }
 
   function hasVariation(statKey) {
     const values = vehicles.map((vehicle) => {
-      const value = window.TyrEnhanced.getStatValue(vehicle, statKey);
+      const value =
+        window.TyrEnhanced.getStatValue(
+          vehicle,
+          statKey
+        );
 
       return value === null ? "--" : value;
     });
@@ -90,38 +190,22 @@ function createStatsTable(vehicles) {
     </div>
   `;
 
-  const target = document.querySelector("main") ?? document.body;
+  const target =
+    document.querySelector("main") ?? document.body;
+
   target.appendChild(section);
 
   function render() {
     const statKeys = getVisibleStatKeys();
 
-    let displayedVehicles = [...vehicles];
+    const displayedVehicles = [...vehicles];
 
-    if (activeStat === "__class__") {
-      const classOrder = {
-        light: 0,
-        medium: 1,
-        heavy: 2,
-      };
-
-      displayedVehicles.sort((a, b) => {
-        const difference = classOrder[a.classId] - classOrder[b.classId];
-
-        if (difference === 0) {
-          return a.name.localeCompare(b.name);
-        }
-
-        return direction === "asc" ? difference : -difference;
-      });
-    } else if (activeStat) {
-      displayedVehicles = window.TyrEnhanced.sortVehiclesByStat(
-        displayedVehicles,
-        activeStat,
-        direction,
-      );
+    if (sortCriteria.length > 0) {
+      displayedVehicles.sort(compareVehicles);
     } else {
-      displayedVehicles.sort((a, b) => a.name.localeCompare(b.name));
+      displayedVehicles.sort((a, b) =>
+        a.name.localeCompare(b.name)
+      );
     }
 
     const head = section.querySelector("thead");
@@ -129,55 +213,20 @@ function createStatsTable(vehicles) {
     head.innerHTML = `
       <tr>
         <th>Tank</th>
-        <th
-  class="tyr-enhanced-sort"
-  data-stat="__class__"
-  data-sort-direction="${activeStat === "__class__" ? direction : "none"}"
->
-  <span class="tyr-enhanced-sort-label">
-    Class
-  </span>
 
-  <span
-    class="tyr-enhanced-sort-indicator"
-    aria-hidden="true"
-  >
-    ${activeStat === "__class__" ? (direction === "asc" ? "▲" : "▼") : "↕"}
-  </span>
-</th>
+        ${renderSortHeader(
+          "__class__",
+          "Class"
+        )}
 
         ${statKeys
-          .map((statKey) => {
-            const active = activeStat === statKey;
-
-            const sortDirection = active ? direction : "none";
-
-            const indicator =
-              sortDirection === "asc"
-                ? "▲"
-                : sortDirection === "desc"
-                  ? "▼"
-                  : "↕";
-
-            return `
-      <th
-        class="numeric tyr-enhanced-sort"
-        data-stat="${statKey}"
-        data-sort-direction="${sortDirection}"
-      >
-        <span class="tyr-enhanced-sort-label">
-          ${getLabel(statKey)}
-        </span>
-
-        <span
-          class="tyr-enhanced-sort-indicator"
-          aria-hidden="true"
-        >
-          ${indicator}
-        </span>
-      </th>
-    `;
-          })
+          .map((statKey) =>
+            renderSortHeader(
+              statKey,
+              getLabel(statKey),
+              true
+            )
+          )
           .join("")}
       </tr>
     `;
@@ -187,43 +236,102 @@ function createStatsTable(vehicles) {
     body.innerHTML = displayedVehicles
       .map(
         (vehicle) => `
-      <tr>
-        <td>${vehicle.name}</td>
-        <td>${vehicle.classLabel}</td>
+          <tr>
+            <td>${vehicle.name}</td>
+            <td>${vehicle.classLabel}</td>
 
-        ${statKeys
-          .map(
-            (statKey) => `
-          <td class="numeric">
-            ${window.TyrEnhanced.formatStatValue(vehicle, statKey)}
-          </td>
-        `,
-          )
-          .join("")}
-      </tr>
-    `,
+            ${statKeys
+              .map(
+                (statKey) => `
+                  <td class="numeric">
+                    ${window.TyrEnhanced.formatStatValue(
+                      vehicle,
+                      statKey
+                    )}
+                  </td>
+                `
+              )
+              .join("")}
+          </tr>
+        `
       )
       .join("");
   }
 
-  section.querySelector("thead").addEventListener("click", (event) => {
-    const header = event.target.closest("[data-stat]");
+  section
+    .querySelector("thead")
+    .addEventListener("click", (event) => {
+      const header =
+        event.target.closest("[data-stat]");
 
-    if (!header) {
-      return;
-    }
+      if (!header) {
+        return;
+      }
 
-    const statKey = header.dataset.stat;
+      const statKey = header.dataset.stat;
 
-    if (activeStat === statKey) {
-      direction = direction === "desc" ? "asc" : "desc";
-    } else {
-      activeStat = statKey;
-      direction = getDefaultDirection(statKey);
-    }
+      const existingIndex =
+        sortCriteria.findIndex(
+          (criterion) =>
+            criterion.key === statKey
+        );
 
-    render();
-  });
+      // Shift + Click:
+      // add another sorting level,
+      // or toggle that level's direction.
+      if (event.shiftKey) {
+        if (existingIndex === -1) {
+          sortCriteria.push({
+            key: statKey,
+            direction:
+              getDefaultDirection(statKey),
+          });
+        } else {
+          sortCriteria[existingIndex].direction =
+            sortCriteria[existingIndex]
+              .direction === "asc"
+              ? "desc"
+              : "asc";
+        }
+
+        render();
+        return;
+      }
+
+      // Clicking the current primary
+      // toggles its direction.
+      if (existingIndex === 0) {
+        sortCriteria[0].direction =
+          sortCriteria[0].direction === "asc"
+            ? "desc"
+            : "asc";
+
+        render();
+        return;
+      }
+
+      // Normal click on another column:
+      // make it primary while preserving
+      // the remaining sort criteria.
+      let criterion;
+
+      if (existingIndex >= 0) {
+        criterion = sortCriteria.splice(
+          existingIndex,
+          1
+        )[0];
+      } else {
+        criterion = {
+          key: statKey,
+          direction:
+            getDefaultDirection(statKey),
+        };
+      }
+
+      sortCriteria.unshift(criterion);
+
+      render();
+    });
 
   section
     .querySelector("#tyr-enhanced-show-all")
@@ -235,4 +343,5 @@ function createStatsTable(vehicles) {
   render();
 }
 
-window.TyrEnhanced.createStatsTable = createStatsTable;
+window.TyrEnhanced.createStatsTable =
+  createStatsTable;
