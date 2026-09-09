@@ -10,7 +10,11 @@
         "https://tyrhq.com/*",
         "https://www.tyrhq.com/*"
       ],
-      "js": ["src/vehicle-data.js", "src/content.js"]
+      "js": [
+        "src/vehicle-data.js",
+        "src/stat-data.js",
+        "src/content.js"
+        ]
     }
   ],
 
