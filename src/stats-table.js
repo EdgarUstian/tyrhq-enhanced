@@ -14,6 +14,8 @@ function createStatsTable(vehicles) {
   let sortCriteria = [];
   let showAllStats = false;
 
+  let selectedClasses = new Set(["light", "medium", "heavy"]);
+
   function getLabel(statKey) {
     return (
       window.TyrEnhanced.statDefinitions?.[statKey]?.label ??
@@ -170,6 +172,37 @@ function createStatsTable(vehicles) {
   </div>
 </div>
 
+<div class="tyr-enhanced-filters">
+  <span class="tyr-enhanced-filter-label">Class</span>
+
+  <label class="tyr-enhanced-class-filter">
+    <input
+      type="checkbox"
+      data-class="light"
+      checked
+    >
+    Light
+  </label>
+
+  <label class="tyr-enhanced-class-filter">
+    <input
+      type="checkbox"
+      data-class="medium"
+      checked
+    >
+    Medium
+  </label>
+
+  <label class="tyr-enhanced-class-filter">
+    <input
+      type="checkbox"
+      data-class="heavy"
+      checked
+    >
+    Heavy
+  </label>
+</div>
+
       <div class="tyr-enhanced-table-scroll">
         <table class="tyr-enhanced-table">
           <thead></thead>
@@ -186,7 +219,9 @@ function createStatsTable(vehicles) {
   function render() {
     const statKeys = getVisibleStatKeys();
 
-    const displayedVehicles = [...vehicles];
+    const displayedVehicles = vehicles.filter((vehicle) =>
+      selectedClasses.has(vehicle.classId),
+    );
 
     if (sortCriteria.length > 0) {
       displayedVehicles.sort(compareVehicles);
@@ -306,7 +341,25 @@ function createStatsTable(vehicles) {
       showAllStats = event.target.checked;
       render();
     });
+  section
+    .querySelector(".tyr-enhanced-filters")
+    .addEventListener("change", (event) => {
+      const input = event.target.closest("[data-class]");
 
+      if (!input) {
+        return;
+      }
+
+      const classId = input.dataset.class;
+
+      if (input.checked) {
+        selectedClasses.add(classId);
+      } else {
+        selectedClasses.delete(classId);
+      }
+
+      render();
+    });
   render();
 }
 

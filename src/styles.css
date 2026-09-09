@@ -195,3 +195,46 @@
 .tyr-enhanced-reset-sort[hidden] {
   display: none;
 }
+.tyr-enhanced-filters {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 8px 16px;
+
+  background: var(--hud-inset);
+  border-bottom: 1px solid rgba(160, 170, 217, 0.12);
+
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tyr-enhanced-filter-label {
+  color: var(--hud-dim);
+  opacity: 0.7;
+}
+
+.tyr-enhanced-class-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  color: var(--hud-dim);
+  cursor: pointer;
+  user-select: none;
+
+  transition: color 120ms ease;
+}
+
+.tyr-enhanced-class-filter:hover {
+  color: var(--hud-teal);
+}
+
+.tyr-enhanced-class-filter input {
+  margin: 0;
+  accent-color: var(--hud-teal);
+  cursor: pointer;
+}
