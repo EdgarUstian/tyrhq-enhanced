@@ -2,15 +2,15 @@ let vehicles = null;
 let lastPath = location.pathname;
 let pageCheckTimer = null;
 
-function removeComparisonTable() {
-  document.querySelector("#tyr-enhanced-comparison")?.remove();
+function removeStatsTable() {
+  document.querySelector("#tyr-enhanced-stats")?.remove();
 }
 
 async function runForCurrentPage() {
   const path = location.pathname;
 
   if (path !== "/tools/tanks/compare") {
-    removeComparisonTable();
+    removeStatsTable();
     return;
   }
 
@@ -22,7 +22,7 @@ async function runForCurrentPage() {
     );
   }
 
-  window.TyrEnhanced.createComparisonTable(vehicles);
+  window.TyrEnhanced.createStatsTable(vehicles);
 }
 
 function schedulePageCheck() {

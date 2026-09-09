@@ -12,7 +12,7 @@
             "js": [
                 "src/vehicle-data.js",
                 "src/stat-data.js",
-                "src/comparison-table.js",
+                "src/stats-table.js",
                 "src/content.js"
             ],
             "css": [
