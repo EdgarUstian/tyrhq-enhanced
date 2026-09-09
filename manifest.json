@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Tyr HQ Enhanced",
+  "version": "0.1.0",
+  "description": "Enhancements for Tyr HQ.",
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://tyrhq.com/*",
+        "https://www.tyrhq.com/*"
+      ],
+      "js": ["src/vehicle-data.js", "src/content.js"]
+    }
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["data/runtime.json"],
+      "matches": [
+        "https://tyrhq.com/*",
+        "https://www.tyrhq.com/*"
+      ]
+    }
+  ]
+}
