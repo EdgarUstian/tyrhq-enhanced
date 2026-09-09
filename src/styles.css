@@ -89,14 +89,44 @@
 .tyr-enhanced-sort {
   cursor: pointer;
   user-select: none;
+
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.tyr-enhanced-sort-label {
+  white-space: nowrap;
+}
+
+.tyr-enhanced-sort-indicator {
+  display: inline-block;
+  width: 1.1em;
+  margin-left: 5px;
+
+  text-align: center;
+  opacity: 0.28;
+
+  transition:
+    color 120ms ease,
+    opacity 120ms ease;
 }
 
 .tyr-enhanced-sort:hover {
   color: var(--hud-teal);
+  background: rgba(153, 247, 255, 0.045);
 }
 
-.tyr-enhanced-sort:active {
-  color: var(--hud-lime);
+.tyr-enhanced-sort:hover .tyr-enhanced-sort-indicator {
+  opacity: 0.65;
+}
+
+.tyr-enhanced-sort[data-sort-direction="asc"]
+  .tyr-enhanced-sort-indicator,
+.tyr-enhanced-sort[data-sort-direction="desc"]
+  .tyr-enhanced-sort-indicator {
+  color: var(--hud-teal);
+  opacity: 1;
 }
 
 .tyr-enhanced-header {

@@ -23,6 +23,10 @@ function createStatsTable(vehicles) {
   }
 
   function getDefaultDirection(statKey) {
+    if (statKey === "__class__") {
+      return "asc";
+    }
+
     const better = window.TyrEnhanced.statDefinitions?.[statKey]?.better;
 
     return better === "lower" ? "asc" : "desc";
@@ -94,7 +98,23 @@ function createStatsTable(vehicles) {
 
     let displayedVehicles = [...vehicles];
 
-    if (activeStat) {
+    if (activeStat === "__class__") {
+      const classOrder = {
+        light: 0,
+        medium: 1,
+        heavy: 2,
+      };
+
+      displayedVehicles.sort((a, b) => {
+        const difference = classOrder[a.classId] - classOrder[b.classId];
+
+        if (difference === 0) {
+          return a.name.localeCompare(b.name);
+        }
+
+        return direction === "asc" ? difference : -difference;
+      });
+    } else if (activeStat) {
       displayedVehicles = window.TyrEnhanced.sortVehiclesByStat(
         displayedVehicles,
         activeStat,
@@ -109,22 +129,54 @@ function createStatsTable(vehicles) {
     head.innerHTML = `
       <tr>
         <th>Tank</th>
-        <th>Class</th>
+        <th
+  class="tyr-enhanced-sort"
+  data-stat="__class__"
+  data-sort-direction="${activeStat === "__class__" ? direction : "none"}"
+>
+  <span class="tyr-enhanced-sort-label">
+    Class
+  </span>
+
+  <span
+    class="tyr-enhanced-sort-indicator"
+    aria-hidden="true"
+  >
+    ${activeStat === "__class__" ? (direction === "asc" ? "▲" : "▼") : "↕"}
+  </span>
+</th>
 
         ${statKeys
           .map((statKey) => {
             const active = activeStat === statKey;
 
-            const arrow = active ? (direction === "desc" ? " ↓" : " ↑") : "";
+            const sortDirection = active ? direction : "none";
+
+            const indicator =
+              sortDirection === "asc"
+                ? "▲"
+                : sortDirection === "desc"
+                  ? "▼"
+                  : "↕";
 
             return `
-            <th
-              class="numeric tyr-enhanced-sort"
-              data-stat="${statKey}"
-            >
-              ${getLabel(statKey)}${arrow}
-            </th>
-          `;
+      <th
+        class="numeric tyr-enhanced-sort"
+        data-stat="${statKey}"
+        data-sort-direction="${sortDirection}"
+      >
+        <span class="tyr-enhanced-sort-label">
+          ${getLabel(statKey)}
+        </span>
+
+        <span
+          class="tyr-enhanced-sort-indicator"
+          aria-hidden="true"
+        >
+          ${indicator}
+        </span>
+      </th>
+    `;
           })
           .join("")}
       </tr>
