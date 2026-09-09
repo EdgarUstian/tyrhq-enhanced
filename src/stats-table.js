@@ -8,11 +8,7 @@ function createStatsTable(vehicles) {
   }
 
   const allStatKeys = [
-    ...new Set(
-      vehicles.flatMap((vehicle) =>
-        Object.keys(vehicle.stats ?? {})
-      )
-    ),
+    ...new Set(vehicles.flatMap((vehicle) => Object.keys(vehicle.stats ?? {}))),
   ];
 
   let sortCriteria = [];
@@ -30,15 +26,14 @@ function createStatsTable(vehicles) {
       return "asc";
     }
 
-    const better =
-      window.TyrEnhanced.statDefinitions?.[statKey]?.better;
+    const better = window.TyrEnhanced.statDefinitions?.[statKey]?.better;
 
     return better === "lower" ? "asc" : "desc";
   }
 
   function getSortCriterion(statKey) {
     const index = sortCriteria.findIndex(
-      (criterion) => criterion.key === statKey
+      (criterion) => criterion.key === statKey,
     );
 
     if (index === -1) {
@@ -51,20 +46,13 @@ function createStatsTable(vehicles) {
     };
   }
 
-  function renderSortHeader(
-    statKey,
-    label,
-    numeric = false
-  ) {
+  function renderSortHeader(statKey, label, numeric = false) {
     const criterion = getSortCriterion(statKey);
 
-    const sortDirection =
-      criterion?.direction ?? "none";
+    const sortDirection = criterion?.direction ?? "none";
 
     const indicator = criterion
-      ? `${
-          criterion.direction === "asc" ? "▲" : "▼"
-        }${criterion.priority}`
+      ? `${criterion.direction === "asc" ? "▲" : "▼"}${criterion.priority}`
       : "↕";
 
     return `
@@ -102,19 +90,15 @@ function createStatsTable(vehicles) {
         const bValue = classOrder[b.classId] ?? 99;
 
         if (aValue !== bValue) {
-          return direction === "asc"
-            ? aValue - bValue
-            : bValue - aValue;
+          return direction === "asc" ? aValue - bValue : bValue - aValue;
         }
 
         continue;
       }
 
-      const aValue =
-        window.TyrEnhanced.getStatValue(a, key);
+      const aValue = window.TyrEnhanced.getStatValue(a, key);
 
-      const bValue =
-        window.TyrEnhanced.getStatValue(b, key);
+      const bValue = window.TyrEnhanced.getStatValue(b, key);
 
       // N/A values always remain at the bottom.
       if (aValue === null && bValue === null) {
@@ -130,9 +114,7 @@ function createStatsTable(vehicles) {
       }
 
       if (aValue !== bValue) {
-        return direction === "asc"
-          ? aValue - bValue
-          : bValue - aValue;
+        return direction === "asc" ? aValue - bValue : bValue - aValue;
       }
     }
 
@@ -142,11 +124,7 @@ function createStatsTable(vehicles) {
 
   function hasVariation(statKey) {
     const values = vehicles.map((vehicle) => {
-      const value =
-        window.TyrEnhanced.getStatValue(
-          vehicle,
-          statKey
-        );
+      const value = window.TyrEnhanced.getStatValue(vehicle, statKey);
 
       return value === null ? "--" : value;
     });
@@ -168,18 +146,29 @@ function createStatsTable(vehicles) {
   section.innerHTML = `
     <div class="tyr-enhanced-panel">
       <div class="tyr-enhanced-header">
-        <h2 class="tyr-enhanced-title">
-          Tyr HQ Enhanced · All-Tank Stats
-        </h2>
+  <h2 class="tyr-enhanced-title">
+    Tyr HQ Enhanced · All-Tank Stats
+  </h2>
 
-        <label class="tyr-enhanced-show-all">
-          <input
-            type="checkbox"
-            id="tyr-enhanced-show-all"
-          >
-          Show all stats
-        </label>
-      </div>
+  <div class="tyr-enhanced-header-actions">
+    <button
+      type="button"
+      class="tyr-enhanced-reset-sort"
+      id="tyr-enhanced-reset-sort"
+      hidden
+    >
+      Reset sort
+    </button>
+
+    <label class="tyr-enhanced-show-all">
+      <input
+        type="checkbox"
+        id="tyr-enhanced-show-all"
+      >
+      Show all stats
+    </label>
+  </div>
+</div>
 
       <div class="tyr-enhanced-table-scroll">
         <table class="tyr-enhanced-table">
@@ -190,8 +179,7 @@ function createStatsTable(vehicles) {
     </div>
   `;
 
-  const target =
-    document.querySelector("main") ?? document.body;
+  const target = document.querySelector("main") ?? document.body;
 
   target.appendChild(section);
 
@@ -203,30 +191,21 @@ function createStatsTable(vehicles) {
     if (sortCriteria.length > 0) {
       displayedVehicles.sort(compareVehicles);
     } else {
-      displayedVehicles.sort((a, b) =>
-        a.name.localeCompare(b.name)
-      );
+      displayedVehicles.sort((a, b) => a.name.localeCompare(b.name));
     }
+    const resetSortButton = section.querySelector("#tyr-enhanced-reset-sort");
 
+    resetSortButton.hidden = sortCriteria.length === 0;
     const head = section.querySelector("thead");
 
     head.innerHTML = `
       <tr>
         <th>Tank</th>
 
-        ${renderSortHeader(
-          "__class__",
-          "Class"
-        )}
+        ${renderSortHeader("__class__", "Class")}
 
         ${statKeys
-          .map((statKey) =>
-            renderSortHeader(
-              statKey,
-              getLabel(statKey),
-              true
-            )
-          )
+          .map((statKey) => renderSortHeader(statKey, getLabel(statKey), true))
           .join("")}
       </tr>
     `;
@@ -244,95 +223,83 @@ function createStatsTable(vehicles) {
               .map(
                 (statKey) => `
                   <td class="numeric">
-                    ${window.TyrEnhanced.formatStatValue(
-                      vehicle,
-                      statKey
-                    )}
+                    ${window.TyrEnhanced.formatStatValue(vehicle, statKey)}
                   </td>
-                `
+                `,
               )
               .join("")}
           </tr>
-        `
+        `,
       )
       .join("");
   }
 
-  section
-    .querySelector("thead")
-    .addEventListener("click", (event) => {
-      const header =
-        event.target.closest("[data-stat]");
+  section.querySelector("thead").addEventListener("click", (event) => {
+    const header = event.target.closest("[data-stat]");
 
-      if (!header) {
-        return;
-      }
+    if (!header) {
+      return;
+    }
 
-      const statKey = header.dataset.stat;
+    const statKey = header.dataset.stat;
 
-      const existingIndex =
-        sortCriteria.findIndex(
-          (criterion) =>
-            criterion.key === statKey
-        );
+    const existingIndex = sortCriteria.findIndex(
+      (criterion) => criterion.key === statKey,
+    );
 
-      // Shift + Click:
-      // add another sorting level,
-      // or toggle that level's direction.
-      if (event.shiftKey) {
-        if (existingIndex === -1) {
-          sortCriteria.push({
-            key: statKey,
-            direction:
-              getDefaultDirection(statKey),
-          });
-        } else {
-          sortCriteria[existingIndex].direction =
-            sortCriteria[existingIndex]
-              .direction === "asc"
-              ? "desc"
-              : "asc";
-        }
-
-        render();
-        return;
-      }
-
-      // Clicking the current primary
-      // toggles its direction.
-      if (existingIndex === 0) {
-        sortCriteria[0].direction =
-          sortCriteria[0].direction === "asc"
-            ? "desc"
-            : "asc";
-
-        render();
-        return;
-      }
-
-      // Normal click on another column:
-      // make it primary while preserving
-      // the remaining sort criteria.
-      let criterion;
-
-      if (existingIndex >= 0) {
-        criterion = sortCriteria.splice(
-          existingIndex,
-          1
-        )[0];
-      } else {
-        criterion = {
+    // Shift + Click:
+    // add another sorting level,
+    // or toggle that level's direction.
+    if (event.shiftKey) {
+      if (existingIndex === -1) {
+        sortCriteria.push({
           key: statKey,
-          direction:
-            getDefaultDirection(statKey),
-        };
+          direction: getDefaultDirection(statKey),
+        });
+      } else {
+        sortCriteria[existingIndex].direction =
+          sortCriteria[existingIndex].direction === "asc" ? "desc" : "asc";
       }
-
-      sortCriteria.unshift(criterion);
 
       render();
-    });
+      return;
+    }
 
+    // Clicking the current primary
+    // toggles its direction.
+    if (existingIndex === 0) {
+      sortCriteria[0].direction =
+        sortCriteria[0].direction === "asc" ? "desc" : "asc";
+
+      render();
+      return;
+    }
+
+    // Normal click on another column:
+    // make it primary while preserving
+    // the remaining sort criteria.
+    let criterion;
+
+    if (existingIndex >= 0) {
+      criterion = sortCriteria.splice(existingIndex, 1)[0];
+    } else {
+      criterion = {
+        key: statKey,
+        direction: getDefaultDirection(statKey),
+      };
+    }
+
+    sortCriteria.unshift(criterion);
+
+    render();
+  });
+
+  section
+    .querySelector("#tyr-enhanced-reset-sort")
+    .addEventListener("click", () => {
+      sortCriteria = [];
+      render();
+    });
   section
     .querySelector("#tyr-enhanced-show-all")
     .addEventListener("change", (event) => {
@@ -343,5 +310,4 @@ function createStatsTable(vehicles) {
   render();
 }
 
-window.TyrEnhanced.createStatsTable =
-  createStatsTable;
+window.TyrEnhanced.createStatsTable = createStatsTable;

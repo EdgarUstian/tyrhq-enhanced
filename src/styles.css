@@ -163,3 +163,35 @@
   opacity: 1;
   font-weight: 700;
 }
+
+.tyr-enhanced-header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.tyr-enhanced-reset-sort {
+  padding: 0;
+  margin: 0 4px 0 0;
+
+  border: 0;
+  background: transparent;
+
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+
+  color: var(--hud-dim);
+  cursor: pointer;
+
+  transition: color 120ms ease;
+}
+
+.tyr-enhanced-reset-sort:hover {
+  color: var(--hud-teal);
+}
+
+.tyr-enhanced-reset-sort[hidden] {
+  display: none;
+}
