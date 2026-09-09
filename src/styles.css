@@ -1,0 +1,77 @@
+#tyr-enhanced-comparison {
+  max-width: 96rem;
+  margin: 24px auto 40px;
+  padding: 0 24px;
+  font-family: var(--font-body);
+  color: var(--hud-text);
+}
+
+.tyr-enhanced-panel {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(26, 34, 51, 0.95),
+      rgba(13, 17, 26, 0.98)
+    );
+
+  box-shadow:
+    inset 2px 0 0 var(--hud-teal),
+    inset 0 0 0 1px rgba(160, 170, 217, 0.12),
+    0 20px 48px rgba(0, 0, 0, 0.28);
+
+  overflow: hidden;
+}
+
+.tyr-enhanced-title {
+  margin: 0;
+  padding: 12px 16px;
+
+  background: var(--hud-panel-high);
+
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+
+  color: var(--hud-text);
+  border-bottom: 1px solid var(--hud-variant);
+}
+
+.tyr-enhanced-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tyr-enhanced-table th,
+.tyr-enhanced-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(160, 170, 217, 0.12);
+}
+
+.tyr-enhanced-table th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--hud-dim);
+}
+
+.tyr-enhanced-table tbody tr:hover {
+  background: rgba(153, 247, 255, 0.05);
+}
+
+.tyr-enhanced-table .numeric {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tyr-enhanced-sort {
+  cursor: pointer;
+  user-select: none;
+}
+
+.tyr-enhanced-sort:hover {
+  color: var(--hud-teal);
+}

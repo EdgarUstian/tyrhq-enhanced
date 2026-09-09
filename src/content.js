@@ -1,26 +1,58 @@
-async function start() {
-  const vehicles = await window.TyrEnhanced.loadVehicleData();
+let vehicles = null;
+let lastPath = location.pathname;
+let pageCheckTimer = null;
 
-  console.log(
-    `[Tyr HQ Enhanced] Loaded ${vehicles.length} vehicles`
-  );
+function removeComparisonTable() {
+  document.querySelector("#tyr-enhanced-comparison")?.remove();
+}
+
+async function runForCurrentPage() {
+  const path = location.pathname;
+
+  if (path !== "/tools/tanks/compare") {
+    removeComparisonTable();
+    return;
+  }
+
+  if (!vehicles) {
+    vehicles = await window.TyrEnhanced.loadVehicleData();
+
+    console.log(
+      `[Tyr HQ Enhanced] Loaded ${vehicles.length} vehicles`
+    );
+  }
 
   window.TyrEnhanced.createComparisonTable(vehicles);
 }
 
+function schedulePageCheck() {
+  clearTimeout(pageCheckTimer);
+
+  pageCheckTimer = setTimeout(() => {
+    runForCurrentPage();
+  }, 250);
+}
+
 function startAfterTyrLoads() {
   if (document.readyState === "complete") {
-    setTimeout(start, 250);
-    return;
+    schedulePageCheck();
+  } else {
+    window.addEventListener("load", schedulePageCheck, {
+      once: true
+    });
   }
 
-  window.addEventListener(
-    "load",
-    () => {
-      setTimeout(start, 250);
-    },
-    { once: true }
-  );
+  const observer = new MutationObserver(() => {
+    if (location.pathname !== lastPath) {
+      lastPath = location.pathname;
+      schedulePageCheck();
+    }
+  });
+
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true
+  });
 }
 
 startAfterTyrLoads();

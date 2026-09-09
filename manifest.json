@@ -14,6 +14,9 @@
                 "src/stat-data.js",
                 "src/comparison-table.js",
                 "src/content.js"
+            ],
+            "css": [
+                "src/styles.css"
             ]
         }
     ],
