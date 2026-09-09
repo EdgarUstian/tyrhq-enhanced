@@ -11,6 +11,26 @@ function createStatsTable(vehicles) {
     ...new Set(vehicles.flatMap((vehicle) => Object.keys(vehicle.stats ?? {}))),
   ];
 
+  const statRanges = new Map(
+    allStatKeys.map((statKey) => {
+      const values = vehicles
+        .map((vehicle) => window.TyrEnhanced.getStatValue(vehicle, statKey))
+        .filter((value) => value !== null);
+
+      if (values.length === 0) {
+        return [statKey, null];
+      }
+
+      return [
+        statKey,
+        {
+          min: Math.min(...values),
+          max: Math.max(...values),
+        },
+      ];
+    }),
+  );
+
   let sortCriteria = [];
   let showAllStats = false;
 
@@ -23,14 +43,81 @@ function createStatsTable(vehicles) {
     );
   }
 
-  function getDefaultDirection(statKey) {
-    if (statKey === "__class__") {
-      return "asc";
+  function getDefaultDirection() {
+    return "desc";
+  }
+
+  function getStatQuality(vehicle, statKey) {
+    const definition = window.TyrEnhanced.statDefinitions?.[statKey];
+
+    if (definition?.better !== "higher" && definition?.better !== "lower") {
+      return null;
     }
 
-    const better = window.TyrEnhanced.statDefinitions?.[statKey]?.better;
+    const value = window.TyrEnhanced.getStatValue(vehicle, statKey);
 
-    return better === "lower" ? "asc" : "desc";
+    if (value === null) {
+      return null;
+    }
+
+    const range = statRanges.get(statKey);
+
+    if (!range) {
+      return null;
+    }
+
+    if (range.min === range.max) {
+      return 0.5;
+    }
+
+    let quality = (value - range.min) / (range.max - range.min);
+
+    if (definition.better === "lower") {
+      quality = 1 - quality;
+    }
+
+    return Math.max(0, Math.min(1, quality));
+  }
+
+  function getQualityBackground(quality) {
+    if (quality === null) {
+      return null;
+    }
+
+    const distanceFromNeutral = Math.abs(quality - 0.5) * 2;
+
+    if (distanceFromNeutral === 0) {
+      return null;
+    }
+
+    const opacity = 0.45 * distanceFromNeutral;
+
+    const color = quality < 0.5 ? [255, 161, 153] : [153, 247, 255];
+
+    return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity.toFixed(3)})`;
+  }
+
+  function renderStatCell(vehicle, statKey) {
+    const quality = getStatQuality(vehicle, statKey);
+    const background = getQualityBackground(quality);
+
+    const gradientStyle = background
+      ? ` style="--tyr-quality-bg: ${background};"`
+      : "";
+
+    const isPrimary = sortCriteria[0]?.key === statKey;
+
+    return `
+    <td
+      class="numeric tyr-enhanced-stat-cell${
+        isPrimary ? " tyr-enhanced-primary-column" : ""
+      }"
+      data-stat="${statKey}"
+      ${gradientStyle}
+    >
+      ${window.TyrEnhanced.formatStatValue(vehicle, statKey)}
+    </td>
+  `;
   }
 
   function getSortCriterion(statKey) {
@@ -50,6 +137,7 @@ function createStatsTable(vehicles) {
 
   function renderSortHeader(statKey, label, numeric = false) {
     const criterion = getSortCriterion(statKey);
+    const isPrimary = criterion?.priority === 1;
 
     const sortDirection = criterion?.direction ?? "none";
 
@@ -59,7 +147,9 @@ function createStatsTable(vehicles) {
 
     return `
       <th
-        class="${numeric ? "numeric " : ""}tyr-enhanced-sort"
+        class="${numeric ? "numeric " : ""}tyr-enhanced-sort${
+          isPrimary ? " tyr-enhanced-primary-column" : ""
+        }"
         data-stat="${statKey}"
         data-sort-direction="${sortDirection}"
       >
@@ -92,7 +182,7 @@ function createStatsTable(vehicles) {
         const bValue = classOrder[b.classId] ?? 99;
 
         if (aValue !== bValue) {
-          return direction === "asc" ? aValue - bValue : bValue - aValue;
+          return direction === "desc" ? aValue - bValue : bValue - aValue;
         }
 
         continue;
@@ -216,6 +306,19 @@ function createStatsTable(vehicles) {
 
   target.appendChild(section);
 
+  function updatePinnedColumnOffsets() {
+    const tankHeader = section.querySelector("thead .tyr-enhanced-pinned-tank");
+
+    if (!tankHeader) {
+      return;
+    }
+
+    section.style.setProperty(
+      "--tyr-pinned-tank-width",
+      `${tankHeader.offsetWidth}px`,
+    );
+  }
+
   function render() {
     const statKeys = getVisibleStatKeys();
 
@@ -235,7 +338,7 @@ function createStatsTable(vehicles) {
 
     head.innerHTML = `
       <tr>
-        <th>Tank</th>
+        <th class="tyr-enhanced-pinned-tank">Tank</th>
 
         ${renderSortHeader("__class__", "Class")}
 
@@ -251,22 +354,29 @@ function createStatsTable(vehicles) {
       .map(
         (vehicle) => `
           <tr>
-            <td>${vehicle.name}</td>
-            <td>${vehicle.classLabel}</td>
+            <td class="tyr-enhanced-pinned-tank">
+              ${vehicle.name}
+            </td>
+            <td
+              data-stat="__class__"
+              class="${
+                sortCriteria[0]?.key === "__class__"
+                  ? "tyr-enhanced-primary-column"
+                  : ""
+              }"
+            >
+              ${vehicle.classLabel}
+            </td>
 
             ${statKeys
-              .map(
-                (statKey) => `
-                  <td class="numeric">
-                    ${window.TyrEnhanced.formatStatValue(vehicle, statKey)}
-                  </td>
-                `,
-              )
+              .map((statKey) => renderStatCell(vehicle, statKey))
               .join("")}
           </tr>
         `,
       )
       .join("");
+
+    requestAnimationFrame(updatePinnedColumnOffsets);
   }
 
   section.querySelector("thead").addEventListener("click", (event) => {
@@ -283,48 +393,51 @@ function createStatsTable(vehicles) {
     );
 
     // Shift + Click:
-    // add another sorting level,
-    // or toggle that level's direction.
+    // neutral -> descending -> ascending -> neutral
+    // while preserving the other sort priorities.
     if (event.shiftKey) {
       if (existingIndex === -1) {
         sortCriteria.push({
           key: statKey,
-          direction: getDefaultDirection(statKey),
+          direction: "desc",
         });
+      } else if (sortCriteria[existingIndex].direction === "desc") {
+        sortCriteria[existingIndex].direction = "asc";
       } else {
-        sortCriteria[existingIndex].direction =
-          sortCriteria[existingIndex].direction === "asc" ? "desc" : "asc";
+        sortCriteria.splice(existingIndex, 1);
       }
 
       render();
       return;
     }
 
-    // Clicking the current primary
-    // toggles its direction.
+    // Normal click on the current primary:
+    // descending -> ascending -> neutral.
     if (existingIndex === 0) {
-      sortCriteria[0].direction =
-        sortCriteria[0].direction === "asc" ? "desc" : "asc";
+      if (sortCriteria[0].direction === "desc") {
+        sortCriteria = [
+          {
+            key: statKey,
+            direction: "asc",
+          },
+        ];
+      } else {
+        sortCriteria = [];
+      }
 
       render();
       return;
     }
 
-    // Normal click on another column:
-    // make it primary while preserving
-    // the remaining sort criteria.
-    let criterion;
-
-    if (existingIndex >= 0) {
-      criterion = sortCriteria.splice(existingIndex, 1)[0];
-    } else {
-      criterion = {
+    // Normal click on any other header:
+    // clear all previous sorting and make this
+    // the descending primary sorter.
+    sortCriteria = [
+      {
         key: statKey,
-        direction: getDefaultDirection(statKey),
-      };
-    }
-
-    sortCriteria.unshift(criterion);
+        direction: "desc",
+      },
+    ];
 
     render();
   });
@@ -360,6 +473,14 @@ function createStatsTable(vehicles) {
 
       render();
     });
+
+  const tableScroll = section.querySelector(".tyr-enhanced-table-scroll");
+
+  const tableResizeObserver = new ResizeObserver(() => {
+    requestAnimationFrame(updatePinnedColumnOffsets);
+  });
+
+  tableResizeObserver.observe(tableScroll);
   render();
 }
 

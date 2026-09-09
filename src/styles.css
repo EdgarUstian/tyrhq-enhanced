@@ -77,7 +77,8 @@
   width: max-content;
   min-width: 100%;
 
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   white-space: nowrap;
 }
 
@@ -237,4 +238,98 @@
   margin: 0;
   accent-color: var(--hud-teal);
   cursor: pointer;
+}
+
+.tyr-enhanced-stat-cell {
+  background-color: var(--tyr-quality-bg, transparent);
+}
+
+/* Tank column is always frozen on the left. */
+.tyr-enhanced-pinned-tank {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+}
+
+/* Header needs to remain above body cells. */
+.tyr-enhanced-table thead
+  .tyr-enhanced-pinned-tank {
+  z-index: 6;
+  background: var(--hud-inset);
+}
+
+/* Give pinned body cells an opaque HUD base so
+   scrolling columns do not show through them. */
+.tyr-enhanced-table tbody
+  .tyr-enhanced-pinned-tank {
+  background: var(--hud-surface);
+}
+
+/* Primary sorter has no special positioning while
+   its natural column is visible. */
+.tyr-enhanced-primary-column {
+  z-index: 2;
+}
+/* Tank is permanently frozen on the left. */
+.tyr-enhanced-pinned-tank {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+
+  background: var(--hud-surface);
+
+  box-shadow:
+    inset 0 -1px 0 rgba(160, 170, 217, 0.12),
+    1px 0 0 rgba(160, 170, 217, 0.12);
+}
+
+.tyr-enhanced-table thead
+  .tyr-enhanced-pinned-tank {
+  z-index: 8;
+  background: var(--hud-inset);
+}
+
+
+/*
+ * Primary sorter stays in its natural location.
+ *
+ * left prevents it from disappearing behind Tank.
+ * right prevents it from disappearing beyond the
+ * right edge.
+ *
+ * CSS handles the transition automatically.
+ */
+.tyr-enhanced-primary-column {
+  position: sticky;
+
+  left: var(--tyr-pinned-tank-width, 0px);
+  right: 0;
+
+  z-index: 4;
+
+  box-shadow:
+    inset 0 -1px 0 rgba(160, 170, 217, 0.12),
+    -1px 0 0 rgba(160, 170, 217, 0.12),
+    1px 0 0 rgba(160, 170, 217, 0.12);
+}
+
+
+/* Primary header stays above the body cells. */
+.tyr-enhanced-table thead
+  .tyr-enhanced-primary-column {
+  z-index: 7;
+  background: var(--hud-inset);
+}
+
+
+/* Primary body cells remain opaque while pinned,
+   while preserving your red/teal quality tint. */
+.tyr-enhanced-table tbody
+  .tyr-enhanced-primary-column {
+  background:
+    linear-gradient(
+      var(--tyr-quality-bg, transparent),
+      var(--tyr-quality-bg, transparent)
+    ),
+    var(--hud-surface);
 }
